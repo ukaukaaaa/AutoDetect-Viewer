@@ -68,19 +68,19 @@ yolov5_l:
     class_names: []
 yolov5_x:
   device:
-    dev_type: cpu
+    dev_type: gpu
   result:
     save_result: 0
     save_dir: ./save/yolov5/yolov5_x/
   normal:
     weight: yolov5x.pt
-    url: [https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5x.pt]
+    url: ['https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5x.pt']
     num_classes: 80
-    infer_conf: 0.25
+    infer_conf: 0.5
     nms_thre: 0.45
     infer_size: [640, 640]
-    mean: [0., 0., 0.]
-    std: [255., 255., 255.]
+    mean: [0.0, 0.0, 0.0]
+    std: [255.0, 255.0, 255.0]
     class_names: []
 yolov5_n6:
   device:

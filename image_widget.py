@@ -16,7 +16,7 @@ import time
 from PIL import Image
 
 # ui配置文件
-cUi, cBase = uic.loadUiType("image_widget.ui")
+cUi, cBase = uic.loadUiType("nn.ui")
 
 # 主界面
 class ImageWidget(QWidget, cUi):
@@ -26,9 +26,9 @@ class ImageWidget(QWidget, cUi):
         cUi.__init__(self)
         self.setupUi(self)
 
-        self.comboBoxCamera.addItem('0')
-        self.comboBoxCamera.addItem('1')
-        self.comboBoxCamera.addItem('2')
+        # self.comboBoxCamera.addItem('0')
+        # self.comboBoxCamera.addItem('1')
+        # self.comboBoxCamera.addItem('2')
         
         self.timer = QTimer()
         self.video_cap = None
@@ -56,41 +56,35 @@ class ImageWidget(QWidget, cUi):
         self.change_background('normal')
 
         
-    @pyqtSlot()
-    def on_btnPhoto_clicked(self):
-        print('on_btnPhoto_clicked')
-        img_path = QFileDialog.getOpenFileName(self,  "选取图片", "./", "Images (*.jpg);;Images (*.png)") 
-        img_path = img_path[0]
-        if img_path != '':
-            self.slot_photo_frame(img_path)
+
     
-    @pyqtSlot()
-    def on_btnVideo_clicked(self):
-        print('on_btnVideo_clicked')
-        video_path = QFileDialog.getOpenFileName(self,  "选取视频", "./", "Videos (*.mp4);;Images (*.3gp)") 
-        video_path = video_path[0]
-        if video_path != '':
-            self.video_cap = cv2.VideoCapture(video_path)
-            self.timer.start()
-            self.timer.setInterval(int(1000 / float(30.0)))
-            self.timer.timeout.connect(self.slot_video_frame)
+    # @pyqtSlot()
+    # def on_btnVideo_clicked(self):
+    #     print('on_btnVideo_clicked')
+    #     video_path = QFileDialog.getOpenFileName(self,  "选取视频", "./", "Videos (*.mp4);;Images (*.3gp)") 
+    #     video_path = video_path[0]
+    #     if video_path != '':
+    #         self.video_cap = cv2.VideoCapture(video_path)
+    #         self.timer.start()
+    #         self.timer.setInterval(int(1000 / float(30.0)))
+    #         self.timer.timeout.connect(self.slot_video_frame)
                     
-    @pyqtSlot()    
-    def on_btnCamera_clicked(self):
-        print('on_btnCamera_clicked')
-        if self.camera_cap is None:
-            self.camera_cap = cv2.VideoCapture(int(0))
-            self.timer.start()
-            self.timer.setInterval(int(1000 / float(30.0)))
-            self.timer.timeout.connect(self.slot_camera_frame)
-        else:
-            self.camera_cap.release()
-            self.camera_cap = None
-            self.timer.stop()
+    # @pyqtSlot()    
+    # def on_btnCamera_clicked(self):
+    #     print('on_btnCamera_clicked')
+    #     if self.camera_cap is None:
+    #         self.camera_cap = cv2.VideoCapture(int(0))
+    #         self.timer.start()
+    #         self.timer.setInterval(int(1000 / float(30.0)))
+    #         self.timer.timeout.connect(self.slot_camera_frame)
+    #     else:
+    #         self.camera_cap.release()
+    #         self.camera_cap = None
+    #         self.timer.stop()
                     
-    @pyqtSlot()    
-    def on_btnStop_clicked(self):
-        self.stop_all()
+    # @pyqtSlot()    
+    # def on_btnStop_clicked(self):
+    #     self.stop_all()
             
     def slot_photo_frame(self, photo_path):          
         img = cv2.imread(photo_path)        
@@ -166,16 +160,15 @@ class ImageWidget(QWidget, cUi):
         self.update()
         
     def draw_image(self, painter):
-        pen = QPen()
+        pen = QPen(Qt.white)
         font = QFont("Microsoft YaHei")
         if self.qpixmap is not None:
             painter.drawPixmap(QtCore.QRect(0, 0, self.width(), self.height()), self.qpixmap)
-            pen.setColor(self.getColor(0))
             painter.setPen(pen)
             pointsize = font.pointSize()
-            font.setPixelSize(pointsize*180/72)
+            font.setPixelSize(pointsize*1.2)
             painter.setFont(font)
-            painter.drawText(10, 30, 'time=%.4f seconds fps=%.4f' % (self.alg_time, 1 / self.alg_time))
+            painter.drawText(0, 13, 'time=%.4f, fps=%.4f' % (self.alg_time, 1 / self.alg_time))
             if self.save_result:
                 painter.drawText(int(self.width() * 0.75), int(self.height() * 0.98), 'save result')
         else:

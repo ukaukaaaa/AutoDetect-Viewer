@@ -16,13 +16,15 @@ from common_utils import get_api_from_model
 import threading
 import qdarkstyle
 import json
+import pdb
+import cv2
 try:
     import queue
 except ImportError:
     import Queue as queue
 
 # ui配置文件
-cUi, cBase = uic.loadUiType("main_widget.ui")
+cUi, cBase = uic.loadUiType("mm.ui")
 
 # 主界面
 class MainWidget(QWidget, cUi):
@@ -47,25 +49,15 @@ class MainWidget(QWidget, cUi):
         # init imagewidget
         self.cImageWidget = ImageWidget()
         self.cImageWidget.set_alg_handle(self)
-        self.tabWidget.insertTab(0, self.cImageWidget, "预测")
-        self.tabWidget.setTabIcon(0, QIcon(QPixmap("./icons/no_news.png")))
+        self.tabWidget.insertTab(0, self.cImageWidget, "Prediction Window")
+
+        # bar
+        # self.horizontalScrollBar = QtWidgets.QScrollBar(self.cImageWidget)
+        # self.horizontalScrollBar.setOrientation(QtCore.Qt.Horizontal)
+        # self.horizontalScrollBar.setObjectName("horizontalScrollBar")
         
         # init config widget
         self.btnSaveCfg.hide()
-        self.tabWidget.setTabIcon(1, QIcon(QPixmap("./icons/no_news.png")))
-
-        # init help widget
-        self.has_news = False
-        self.cBrowser = QWebEngineView()
-        webEngineSettings = self.cBrowser.settings()
-        webEngineSettings.setAttribute(QWebEngineSettings.LocalStorageEnabled, False)
-        engineProfile = self.cBrowser.page().profile()
-        engineProfile.clearHttpCache()
-        cookie = engineProfile.cookieStore()
-        cookie.deleteAllCookies()
-        self.cBrowser.load(QUrl('http://www.lgddx.cn/projects/yolo_all/news/index.htm'))
-        self.tabWidget.insertTab(2, self.cBrowser, "帮助")
-        self.tabWidget.setTabIcon(2, QIcon(QPixmap("./icons/no_news.png")))
 
         # show imagewidget
         self.tabWidget.setCurrentIndex(0)
@@ -90,6 +82,14 @@ class MainWidget(QWidget, cUi):
         self.create_model_process = 0
         self.create_process_dialog = None
 
+    @pyqtSlot()
+    def on_btnPhoto_clicked(self):
+        print('on_btnPhoto_clicked')
+        img_path = QFileDialog.getOpenFileName(self,  "选取图片", "./", "Images (*.jpg);;Images (*.png)") 
+        img_path = img_path[0]
+        if img_path != '':
+            self.cImageWidget.slot_photo_frame(img_path)          
+
     def slot_log_info(self, info):
         if str(info).startswith('cmd:'):
             if 'load models finished' in str(info):
@@ -106,7 +106,7 @@ class MainWidget(QWidget, cUi):
                 box = QMessageBox()
                 box.setIcon(QMessageBox.Critical)
                 box.setTextInteractionFlags(Qt.TextSelectableByMouse)
-                box.setWindowTitle(u"预训练模型未下载")
+                box.setWindowTitle(u"Modol does not exist")
                 box.setText(box_message)
                 box.setTextInteractionFlags(Qt.TextSelectableByMouse)
                 box.exec()
@@ -132,13 +132,11 @@ class MainWidget(QWidget, cUi):
                     break
                 
     def det_thread_func(self):
-        self.log_sig.emit('检测线程启动')
+        self.log_sig.emit('Checking...')
         
         # search all algs
         self.search_alg_and_model()
         
-        # check news_id 
-        self.cBrowser.page().toPlainText(self.check_news)
         
         while self.det_thread_flag:
             if self.update_model_flag:
@@ -152,7 +150,9 @@ class MainWidget(QWidget, cUi):
                 #self.log_sig.emit('det thread get waiting for img')
             if img is not None and self.alg is not None:     
                 start_time = time.time()
+                print(img.shape)
                 ret = self.alg.inference(img)
+                # pdb.set_trace()
                 if self.cImageWidget is not None:
                     time_spend = time.time()-start_time
                     if 'result' not in self.model_cfg.keys():
@@ -171,20 +171,20 @@ class MainWidget(QWidget, cUi):
         
     def search_alg_and_model(self):
         self.alg_model_map = {}
-        self.log_sig.emit('>开始加载模型，请等待所有模型加载成功')
+        self.log_sig.emit('Initialization, please wait...')
         for sub_dir in os.listdir('./model_zoo'):
-            self.log_sig.emit('>>正在加载模型: %s'%str(sub_dir))
+            self.log_sig.emit('>> Loading model: %s'%str(sub_dir))
             sub_path = os.path.join('./model_zoo', sub_dir)
             if os.path.isdir(sub_path):
                 api = get_api_from_model(str(sub_dir))
                 if api is not None:
                     self.alg = api.Alg()
                     self.alg_model_map[str(sub_dir)] = self.alg.get_support_models()
-                    self.log_sig.emit('>>加载模型: %s 成功'%str(sub_dir))
+                    self.log_sig.emit('>> Loading model: %s success'%str(sub_dir))
                 else:
                     self.alg_model_map[str(sub_dir)] = []
-                    self.log_sig.emit('>>加载模型: %s 失败'%str(sub_dir))
-        self.log_sig.emit('>加载模型结束')
+                    self.log_sig.emit('>> Loading model: %s failed'%str(sub_dir))
+        self.log_sig.emit('Load models finished\n')
         self.log_sig.emit('cmd:load models finished')
 
     def init_model_tree(self):
@@ -198,28 +198,31 @@ class MainWidget(QWidget, cUi):
                     
     def updaet_model(self):
         self.log_sig.emit('cmd:start create model')
-        self.log_sig.emit('开始创建模型: %s'%str(self.model_name))
-        self.log_sig.emit('  停止ImageWidget')
+        self.log_sig.emit('Start to create model: %s'%str(self.model_name))
+        self.log_sig.emit('>> Stop ImageWidget')
         self.cImageWidget.stop_all()
-        title_name = 'YoloAll V2.0.0 当前模型:' + self.model_name
+        title_name = self.info['version'] + '(Current model: ' + self.model_name + ";"
+
+        ##
+        # self.alg_name = "YoloV5"; self.model_cfg['normal']['weight'] = "yolo5x.pt"
 
         pretrain_path = './model_zoo/' + self.alg_name + '/' + self.model_cfg['normal']['weight']
         if not os.path.exists(pretrain_path):
-            self.log_sig.emit('  创建模型: %s 失败，预训练模型未下载'%str(self.model_name))
-            box_info = u'请到如下地址下载预训练模型\n放到 model_zoo/%s 下面\n下载地址：\n%s'%(self.alg_name, self.model_cfg['normal']['url'])
+            self.log_sig.emit('  Create model: %s failed，pretrained weight not download'%str(self.model_name))
+            box_info = u'Download weight and put it under model_zoo/%s \nAddress：\n%s'%(self.alg_name, self.model_cfg['normal']['url'])
             self.log_sig.emit('cmd:pretrain unget=%s'%box_info)
             self.alg = None
             return
         if self.alg is not None:
             device = 'cuda' if self.model_cfg['device']['dev_type'] == 'gpu' else 'cpu'
-            title_name += ' 设备类型:' + device
-            self.log_sig.emit('  设备类型:' + device)
+            title_name += ' device: ' + device + ")"
+            self.log_sig.emit('>> device:' + device)
             self.alg.create_model(self.model_name, device)
             self.log_sig.emit('cmd:create model success')
-            self.log_sig.emit('  创建模型: %s 结束'%str(self.model_name))
+            self.log_sig.emit('  Create model: %s finish\n'%str(self.model_name))
         else:
             self.log_sig.emit('cmd:create model failed')
-            self.log_sig.emit('  创建模型: %s 失败，算法句柄尚未创建'%str(self.model_name))
+            self.log_sig.emit('  Create model: %s failed，algorithm not create'%str(self.model_name))
             self.alg = None
         self.log_sig.emit('cmd:update title=%s'%(title_name))
 
@@ -318,15 +321,15 @@ class MainWidget(QWidget, cUi):
         self.update_model_flag = True
 
     def closeEvent(self, event):        
-        reply = QMessageBox.question(self, 'Message',"Are you sure to quit?",
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            event.accept()
-            self.cImageWidget.stop_all()
-            self.det_thread_flag = False
-            self.det_thread_handle.join()
-        else:
-            event.ignore()
+        # reply = QMessageBox.question(self, 'Message',"Are you sure to quit?",
+        #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        # if reply == QMessageBox.Yes:
+        event.accept()
+        self.cImageWidget.stop_all()
+        self.det_thread_flag = False
+        self.det_thread_handle.join()
+        # else:
+        #     event.ignore()
 
         
 if __name__ == "__main__":
@@ -334,4 +337,4 @@ if __name__ == "__main__":
     cMainWidget = MainWidget()
     cApp.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
     cMainWidget.show()
-    sys.exit(cApp.exec_())
+    sys.exit(cApp.exec_())                                                                                
