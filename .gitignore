@@ -1,1 +1,3 @@
 model_zoo/YoloV5/yolov5x.yaml
+*.jpg
+*.png

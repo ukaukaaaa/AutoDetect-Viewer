@@ -22,7 +22,7 @@ class Alg(AlgBase):
         self.ignore_keys = []
         self.load_cfg()
         
-    def create_model(self, model_name="yolov5_n", dev="cpu"):
+    def create_model(self, model_name="pancreas", dev="cpu"):
         if model_name not in self.cfg_info.keys():
             print('unknown model name:', model_name, 'create failed')
             return
@@ -44,10 +44,9 @@ class Alg(AlgBase):
         return None
     
     def inference(self, img_array):
-        # pdb.set_trace()
         map_result = {'type':'img'}
         img_resize = cv2.resize(img_array,  tuple(self.cfg_info[self.model_name]['normal']['infer_size']))
-        img = (img_array - self.cfg_info[self.model_name]['normal']['mean']) / self.cfg_info[self.model_name]['normal']['std']
+        img = (img_resize - self.cfg_info[self.model_name]['normal']['mean']) / self.cfg_info[self.model_name]['normal']['std']
         img = img.transpose((2,0,1))    
         img_tensor = torch.from_numpy(img.astype(np.float32)).unsqueeze(0)
 
@@ -70,6 +69,6 @@ class Alg(AlgBase):
         y_rate = img_array.shape[0] /  self.cfg_info[self.model_name]['normal']['infer_size'][1]
         boxes[:,0:4:2] = boxes[:,0:4:2] * x_rate
         boxes[:,1:4:2] = boxes[:,1:4:2] * y_rate
-        vis(img_array, boxes, scores, cls, conf=float(self.cfg_info[self.model_name]['normal']['infer_conf']))
+        vis(img_array, boxes, scores, cls, conf=float(self.cfg_info[self.model_name]['normal']['infer_conf']), class_names=self.cfg_info[self.model_name]['normal']['class_names'])
         map_result['result'] = img_array
         return map_result
