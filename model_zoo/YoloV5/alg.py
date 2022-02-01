@@ -47,7 +47,7 @@ class Alg(AlgBase):
         # pdb.set_trace()
         map_result = {'type':'img'}
         img_resize = cv2.resize(img_array,  tuple(self.cfg_info[self.model_name]['normal']['infer_size']))
-        img = (img_array - self.cfg_info[self.model_name]['normal']['mean']) / self.cfg_info[self.model_name]['normal']['std']
+        img = (img_resize - self.cfg_info[self.model_name]['normal']['mean']) / self.cfg_info[self.model_name]['normal']['std']
         img = img.transpose((2,0,1))    
         img_tensor = torch.from_numpy(img.astype(np.float32)).unsqueeze(0)
 

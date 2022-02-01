@@ -10,7 +10,7 @@ pancreas:
     save_result: 0
     save_dir: ./save/ScaledYolov4/pancreas/
   normal:
-    weight: pancreas1.pt
+    weight: pancreas.pt
     url: ['please provide weight']
     num_classes: 1
     infer_conf: 0.2

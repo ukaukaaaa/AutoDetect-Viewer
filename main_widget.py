@@ -85,10 +85,18 @@ class MainWidget(QWidget, cUi):
     @pyqtSlot()
     def on_btnPhoto_clicked(self):
         print('on_btnPhoto_clicked')
-        img_path = QFileDialog.getOpenFileName(self,  "选取图片", "./", "Images (*.jpg);;Images (*.png)") 
+        img_path = QFileDialog.getOpenFileName(self,  "Choose one file", "./inputs", "Images (*.jpg);;Images (*.png)") 
         img_path = img_path[0]
         if img_path != '':
-            self.cImageWidget.slot_photo_frame(img_path)          
+            self.cImageWidget.slot_photo_frame(img_path)
+
+    @pyqtSlot()
+    def on_btnFile_clicked(self):
+        print('on_btnFile_clicked')
+        img_path = QFileDialog.getOpenFileName(self,  "Choose one file", "./inputs", "Images (*.dcm);;Images (*.nii.gz)") 
+        img_path = img_path[0]
+        if img_path != '':
+            self.cImageWidget.slot_file_frame(img_path)          
 
     def slot_log_info(self, info):
         if str(info).startswith('cmd:'):
