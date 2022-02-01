@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>753</width>
+    <width>818</width>
     <height>745</height>
    </rect>
   </property>
@@ -17,7 +17,7 @@
    <item row="0" column="0">
     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="5,1">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,3">
+      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0,3">
        <item>
         <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,10">
          <item>
@@ -66,6 +66,13 @@
         </layout>
        </item>
        <item>
+        <widget class="QScrollBar" name="Slider">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="font">
           <font>
@@ -95,7 +102,7 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>510</width>
+                <width>538</width>
                 <height>538</height>
                </rect>
               </property>

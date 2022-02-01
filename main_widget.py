@@ -15,6 +15,7 @@ from image_widget import ImageWidget
 from common_utils import get_api_from_model
 import threading
 import qdarkstyle
+from glob import glob
 import json
 import pdb
 import cv2
@@ -50,12 +51,10 @@ class MainWidget(QWidget, cUi):
         self.cImageWidget = ImageWidget()
         self.cImageWidget.set_alg_handle(self)
         self.tabWidget.insertTab(0, self.cImageWidget, "Prediction Window")
-
-        # bar
-        # self.horizontalScrollBar = QtWidgets.QScrollBar(self.cImageWidget)
-        # self.horizontalScrollBar.setOrientation(QtCore.Qt.Horizontal)
-        # self.horizontalScrollBar.setObjectName("horizontalScrollBar")
         
+        # slider
+        self.Slider.valueChanged.connect(self.changeImage)
+
         # init config widget
         self.btnSaveCfg.hide()
 
@@ -81,9 +80,13 @@ class MainWidget(QWidget, cUi):
         self.update_model_flag = False
         self.create_model_process = 0
         self.create_process_dialog = None
+        self.slice_list = []
+        self.is_file = False
 
     @pyqtSlot()
     def on_btnPhoto_clicked(self):
+        self.is_file = False
+        self.slice_list = []
         print('on_btnPhoto_clicked')
         img_path = QFileDialog.getOpenFileName(self,  "Choose one file", "./inputs", "Images (*.jpg);;Images (*.png)") 
         img_path = img_path[0]
@@ -93,10 +96,54 @@ class MainWidget(QWidget, cUi):
     @pyqtSlot()
     def on_btnFile_clicked(self):
         print('on_btnFile_clicked')
+        self.is_file = True
+        self.slice_list = []
         img_path = QFileDialog.getOpenFileName(self,  "Choose one file", "./inputs", "Images (*.dcm);;Images (*.nii.gz)") 
         img_path = img_path[0]
+        img_path = "/".join(img_path.split("/")[:-1]) + "/*.dcm"
+        self.Slider.setMaximum(len(glob(img_path)))
+
         if img_path != '':
-            self.cImageWidget.slot_file_frame(img_path)          
+            self.slice_list = self.cImageWidget.slot_file_frame(img_path)          
+
+    def det_thread_func(self):
+        self.log_sig.emit('Checking...')
+        
+        # search all algs
+        self.search_alg_and_model()
+        
+        lastslider = -1
+        while self.det_thread_flag:
+            if self.update_model_flag:
+                self.updaet_model()
+                self.update_model_flag = False
+
+            if self.is_file == True and len(self.slice_list) > 0:
+                if lastslider == self.Slider.value():
+                    continue
+                self.cImageWidget.cAlg.add_img(self.slice_list[self.Slider.value()])
+                lastslider = self.Slider.value()
+
+            try:
+                img = self.det_thread_queue.get(block=True, timeout=0.2)
+            except queue.Empty:
+                img = None
+
+            if img is not None and self.alg is not None:    
+                start_time = time.time()
+                ret = self.alg.inference(img)
+                if self.cImageWidget is not None:
+                    time_spend = time.time()-start_time
+                    if 'result' not in self.model_cfg.keys():
+                        save_result = 0
+                        save_path = None
+                    else:
+                        save_result = int(self.model_cfg['result']['save_result'])
+                        save_path = self.model_cfg['result']['save_dir']
+                    self.cImageWidget.slot_alg_result(img, ret, time_spend, save_result, save_path)
+
+    def changeImage(self, val):
+        print(val)
 
     def slot_log_info(self, info):
         if str(info).startswith('cmd:'):
@@ -139,37 +186,6 @@ class MainWidget(QWidget, cUi):
                     self.log_sig.emit('news_id')
                     break
                 
-    def det_thread_func(self):
-        self.log_sig.emit('Checking...')
-        
-        # search all algs
-        self.search_alg_and_model()
-        
-        
-        while self.det_thread_flag:
-            if self.update_model_flag:
-                self.updaet_model()
-                self.update_model_flag = False
-            try:
-                img = self.det_thread_queue.get(block=True, timeout=0.2)
-                #self.log_sig.emit('det thread get a img')
-            except queue.Empty:
-                img = None
-                #self.log_sig.emit('det thread get waiting for img')
-            if img is not None and self.alg is not None:     
-                start_time = time.time()
-                print(img.shape)
-                ret = self.alg.inference(img)
-                # pdb.set_trace()
-                if self.cImageWidget is not None:
-                    time_spend = time.time()-start_time
-                    if 'result' not in self.model_cfg.keys():
-                        save_result = 0
-                        save_path = None
-                    else:
-                        save_result = int(self.model_cfg['result']['save_result'])
-                        save_path = self.model_cfg['result']['save_dir']
-                    self.cImageWidget.slot_alg_result(img, ret, time_spend, save_result, save_path)
         
     def add_img(self, img):
         if self.det_thread_queue.full():

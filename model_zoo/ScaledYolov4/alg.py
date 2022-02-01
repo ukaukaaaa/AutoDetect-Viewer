@@ -52,7 +52,6 @@ class Alg(AlgBase):
 
         if self.device == "cuda":
             img_tensor = img_tensor.cuda()
-
         with torch.no_grad():
             pred = self.model(img_tensor, augment=False)[0]
             pred = non_max_suppression(pred, 
@@ -60,7 +59,8 @@ class Alg(AlgBase):
                                        float(self.cfg_info[self.model_name]['normal']['nms_thre']), 
                                        classes=None, 
                                        agnostic=False)
-        
+        if pred == [None]:
+            pred = [torch.zeros(0, 6)]
         valid_pred = pred[0].cpu()
         boxes = valid_pred[:,0:4]
         cls = valid_pred[:, 5]

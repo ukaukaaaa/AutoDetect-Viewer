@@ -12,6 +12,10 @@ import xml.etree.cElementTree as et
 import os
 import cv2
 import math
+import pdb
+import numpy as np
+import pydicom
+from glob import glob
 import time
 from PIL import Image
 
@@ -25,10 +29,6 @@ class ImageWidget(QWidget, cUi):
         QMainWindow.__init__(self)
         cUi.__init__(self)
         self.setupUi(self)
-
-        # self.comboBoxCamera.addItem('0')
-        # self.comboBoxCamera.addItem('1')
-        # self.comboBoxCamera.addItem('2')
         
         self.timer = QTimer()
         self.video_cap = None
@@ -55,37 +55,20 @@ class ImageWidget(QWidget, cUi):
 
         self.change_background('normal')
 
-        
-
-    
-    # @pyqtSlot()
-    # def on_btnVideo_clicked(self):
-    #     print('on_btnVideo_clicked')
-    #     video_path = QFileDialog.getOpenFileName(self,  "选取视频", "./", "Videos (*.mp4);;Images (*.3gp)") 
-    #     video_path = video_path[0]
-    #     if video_path != '':
-    #         self.video_cap = cv2.VideoCapture(video_path)
-    #         self.timer.start()
-    #         self.timer.setInterval(int(1000 / float(30.0)))
-    #         self.timer.timeout.connect(self.slot_video_frame)
-                    
-    # @pyqtSlot()    
-    # def on_btnCamera_clicked(self):
-    #     print('on_btnCamera_clicked')
-    #     if self.camera_cap is None:
-    #         self.camera_cap = cv2.VideoCapture(int(0))
-    #         self.timer.start()
-    #         self.timer.setInterval(int(1000 / float(30.0)))
-    #         self.timer.timeout.connect(self.slot_camera_frame)
-    #     else:
-    #         self.camera_cap.release()
-    #         self.camera_cap = None
-    #         self.timer.stop()
-                    
-    # @pyqtSlot()    
-    # def on_btnStop_clicked(self):
-    #     self.stop_all()
+    def slot_file_frame(self, file_path):
+        slice_list = []
+        for dir in glob(file_path, recursive=True):
+            img = self.loadimg(dir)
+            img = self.normalization(img, -240, 210) * 255
+            # img = np.flipud(img)
+            img = np.stack((img,img,img), axis=2).astype(np.uint8)
+            slice_list.append(img)
             
+        return slice_list
+
+    def slot_addimg(self, photo):
+        self.cAlg.add_img(photo)        
+
     def slot_photo_frame(self, photo_path):          
         img = cv2.imread(photo_path)        
         self.cAlg.add_img(img)
@@ -158,7 +141,16 @@ class ImageWidget(QWidget, cUi):
         bg_path = './icons/bg_' + bg_name + '.png'
         self.qpixmap_bg = QPixmap(bg_path)
         self.update()
-        
+
+    def loadimg(self, img):
+        instance = pydicom.read_file(img)
+        data = instance.pixel_array
+        return data
+
+    def normalization(self, img, low, high):
+        img = np.clip(img, low, high)
+        return (img-low) / (high-low)
+
     def draw_image(self, painter):
         pen = QPen(Qt.white)
         font = QFont("Microsoft YaHei")
