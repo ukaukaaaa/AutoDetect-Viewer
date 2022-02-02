@@ -285,10 +285,21 @@ def vis(img, boxes, scores, cls_ids, conf=0.5, class_names=COCO_CLASSES):
         score = scores[i]
         if score < conf:
             continue
+
+        
+        """     
+        True
         x0 = int(box[0])
         y0 = int(box[1])
         x1 = int(box[2])
         y1 = int(box[3])
+        
+        """
+
+        x0 = int(box[0])
+        y1 = int(box[1])
+        x1 = int(box[2])
+        y0 = int(box[3])
 
         color = (COCO_COLORS[cls_id] * 255).astype(np.uint8).tolist()
         text = '{}:{:.1f}%'.format(class_names[cls_id], score * 100)

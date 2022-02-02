@@ -53,7 +53,7 @@ class MainWidget(QWidget, cUi):
         self.tabWidget.insertTab(0, self.cImageWidget, "Prediction Window")
         
         # slider
-        self.Slider.valueChanged.connect(self.changeImage)
+        # self.Slider.valueChanged.connect(self.changeImage)
 
         # init config widget
         self.btnSaveCfg.hide()
@@ -141,9 +141,6 @@ class MainWidget(QWidget, cUi):
                         save_result = int(self.model_cfg['result']['save_result'])
                         save_path = self.model_cfg['result']['save_dir']
                     self.cImageWidget.slot_alg_result(img, ret, time_spend, save_result, save_path)
-
-    def changeImage(self, val):
-        print(val)
 
     def slot_log_info(self, info):
         if str(info).startswith('cmd:'):
@@ -251,12 +248,12 @@ class MainWidget(QWidget, cUi):
         self.log_sig.emit('cmd:update title=%s'%(title_name))
 
     def _translate_str(self, ori_str):
-        translate_map = {'device': '设备配置',
-                         'dev_type': '设备类型(cpu/gpu)',
-                         'result': '检测结果配置',
-                         'save_result': '是否保存结果',
-                         'save_dir': '保存路径',
-                         'normal': '通用配置',
+        translate_map = {'device': 'Device',
+                         'dev_type': 'cpu/gpu',
+                         'result': 'Result',
+                         'save_result': 'If save result',
+                         'save_dir': 'Save dir',
+                         'normal': 'Parameters',
                          }
         if ori_str in translate_map.keys():
             return translate_map[ori_str]

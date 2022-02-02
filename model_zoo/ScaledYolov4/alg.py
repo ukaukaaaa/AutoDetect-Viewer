@@ -67,8 +67,15 @@ class Alg(AlgBase):
         scores = valid_pred[:, 4]
         x_rate = img_array.shape[1] /  self.cfg_info[self.model_name]['normal']['infer_size'][0]
         y_rate = img_array.shape[0] /  self.cfg_info[self.model_name]['normal']['infer_size'][1]
+        
+        # no need for this line
+        img_array = np.stack([np.flipud(img_array[...,0])]*3, axis=2)
+
         boxes[:,0:4:2] = boxes[:,0:4:2] * x_rate
-        boxes[:,1:4:2] = boxes[:,1:4:2] * y_rate
+        
+        # no need for 512 - 
+        boxes[:,1:4:2] = 512 - boxes[:,1:4:2] * y_rate
+
         vis(img_array, boxes, scores, cls, conf=float(self.cfg_info[self.model_name]['normal']['infer_conf']), class_names=self.cfg_info[self.model_name]['normal']['class_names'])
         map_result['result'] = img_array
         return map_result
