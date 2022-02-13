@@ -3,7 +3,7 @@ alg_info:
   version: release v1.0
   url: https://github.com/WongKinYiu/ScaledYOLOv4
 
-Pancreas:
+pancreas:
   device:
     dev_type: gpu
   result:
@@ -20,18 +20,18 @@ Pancreas:
     std: [255.0, 255.0, 255.0]
     class_names: ['pancreas']
 
-Lung nodule:
+nodule:
   device:
     dev_type: gpu
   result:
     save_result: 0
     save_dir: ./save/ScaledYolov4/nodule/
   normal:
-    weight: best.pt
+    weight: nodule.pt
     url: ['please provide weight']
     num_classes: 1
-    infer_conf: 0.2
-    nms_thre: 0.3
+    infer_conf: 0.4
+    nms_thre: 0.2
     infer_size: [512, 512]
     mean: [0.0, 0.0, 0.0]
     std: [255.0, 255.0, 255.0]

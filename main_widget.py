@@ -12,17 +12,19 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from image_widget import ImageWidget
-from common_utils import get_api_from_model
+from common_utils import get_api_from_model, search, load_itk_image, truncate_hu, normalazation
 import threading
 import qdarkstyle
 from glob import glob
 import json
 import pdb
 import cv2
+import numpy as np
 try:
     import queue
 except ImportError:
     import Queue as queue
+from matplotlib import pyplot as plt
 
 # ui配置文件
 cUi, cBase = uic.loadUiType("mm.ui")
@@ -98,13 +100,36 @@ class MainWidget(QWidget, cUi):
         print('on_btnFile_clicked')
         self.is_file = True
         self.slice_list = []
-        img_path = QFileDialog.getOpenFileName(self,  "Choose one file", "./inputs", "Images (*.dcm);;Images (*.nii.gz)") 
+        img_path = QFileDialog.getOpenFileName(self,  "Choose one file", "./inputs", "Images (*.dcm);;Images (*.mhd)")
         img_path = img_path[0]
-        img_path = "/".join(img_path.split("/")[:-1]) + "/*.dcm"
-        self.Slider.setMaximum(len(glob(img_path)))
+        
 
-        if img_path != '':
-            self.slice_list = self.cImageWidget.slot_file_frame(img_path)          
+        if img_path.split(".")[-1] == 'dcm':
+            img_path = "/".join(img_path.split("/")[:-1]) + "/*.dcm"
+            self.Slider.setMaximum(len(glob(img_path))-1)
+            if img_path != '':
+                self.slice_list = self.cImageWidget.slot_file_frame(img_path)          
+        
+        elif img_path.split(".")[-1] == 'mhd':
+            fileDir = []
+            fileDir = search(path=r"D:/LUNA/seg-lungs-LUNA16", name = ".".join(img_path.split("/")[-1].split(".")[:-1]), fileDir=fileDir)
+            for file in fileDir:
+                if '.mhd' in file:
+                    segmask_filedir = file
+                    break
+            numpyimage, _, _ = load_itk_image(img_path)
+            numpymask, _, _ = load_itk_image(segmask_filedir)
+            numpymask[np.where(numpymask!=0)]=1
+            truncate_hu(numpyimage)
+            numpyimage = normalazation(numpyimage) * 255
+
+            self.Slider.setMaximum(numpyimage.shape[0]-1)
+            if img_path != '':
+                self.slice_list = [{"image": np.stack([numpyimage.transpose(1,2,0)[:,:,i]]*3, axis=2).astype(np.uint8),
+                                    "mask": np.stack([numpymask.transpose(1,2,0)[:,:,i]]*3, axis=2).astype(np.uint8)} 
+                                    for i in range(numpyimage.shape[0])]
+                print(len(self.slice_list))
+
 
     def det_thread_func(self):
         self.log_sig.emit('Checking...')
@@ -121,7 +146,12 @@ class MainWidget(QWidget, cUi):
             if self.is_file == True and len(self.slice_list) > 0:
                 if lastslider == self.Slider.value():
                     continue
-                self.cImageWidget.cAlg.add_img(self.slice_list[self.Slider.value()])
+                print(self.Slider.value())
+                if self.model_name == 'nodule':
+                    self.cImageWidget.cAlg.add_img(self.slice_list[self.Slider.value()]['image'])
+                else:
+                    self.cImageWidget.cAlg.add_img(self.slice_list[self.Slider.value()])
+
                 lastslider = self.Slider.value()
 
             try:
@@ -131,7 +161,13 @@ class MainWidget(QWidget, cUi):
 
             if img is not None and self.alg is not None:    
                 start_time = time.time()
-                ret = self.alg.inference(img)
+
+                if self.model_name == 'nodule':
+                    ret = self.alg.inference(img, segmask=self.slice_list[self.Slider.value()]['mask'])
+                else:
+                    ret = self.alg.inference(img)
+
+
                 if self.cImageWidget is not None:
                     time_spend = time.time()-start_time
                     if 'result' not in self.model_cfg.keys():

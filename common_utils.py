@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 from collections import OrderedDict
 from ruamel import yaml
+import SimpleITK as sitk
 import time
 
 COCO_CLASSES = (
@@ -277,7 +278,7 @@ def load_pre_train_ignore_name(net, pre_train):
 
         net.load_state_dict(new_dict, strict=False)
 
-def vis(img, boxes, scores, cls_ids, conf=0.5, class_names=COCO_CLASSES):
+def vis(img, boxes, scores, cls_ids, conf=0.5, class_names=COCO_CLASSES, model_name=None):
 
     for i in range(len(boxes)):
         box = boxes[i]
@@ -295,11 +296,16 @@ def vis(img, boxes, scores, cls_ids, conf=0.5, class_names=COCO_CLASSES):
         y1 = int(box[3])
         
         """
-
-        x0 = int(box[0])
-        y1 = int(box[1])
-        x1 = int(box[2])
-        y0 = int(box[3])
+        if model_name == 'pancreas':
+            x0 = int(box[0])
+            y1 = int(box[1])
+            x1 = int(box[2])
+            y0 = int(box[3])
+        else:
+            x0 = int(box[0])
+            y0 = int(box[1])
+            x1 = int(box[2])
+            y1 = int(box[3])            
 
         color = (COCO_COLORS[cls_id] * 255).astype(np.uint8).tolist()
         text = '{}:{:.1f}%'.format(class_names[cls_id], score * 100)
@@ -414,8 +420,66 @@ class AlgBase:
                 model_list.append(key)
         return model_list
 
-if __name__ == "__main__":
-    api = get_api_from_model('YoloFastest')
-    api = get_api_from_model('YoloV5')
-    
+# save the info of CT
+class CTImage(object):
+    """docstring for Hotel"""
+    def __init__(self, x_offset, y_offset, z_offset, x_ElementSpacing, y_ElementSpacing, z_ElementSpacing):
+        self.x_offset = x_offset
+        self.y_offset = y_offset
+        self.z_offset = z_offset
+        self.x_ElementSpacing = x_ElementSpacing
+        self.y_ElementSpacing = y_ElementSpacing
+        self.z_ElementSpacing = z_ElementSpacing
+        self.ElementSpacing = np.array([x_ElementSpacing, y_ElementSpacing, z_ElementSpacing])
+
+
+def load_itk_image(filename):
+    with open(filename) as f:
+        contents = f.readlines()
+        line = [k for k in contents if k.startswith('TransformMatrix')][0]
+        offset = [k for k in contents if k.startswith('Offset')][0]
+        EleSpacing = [k for k in contents if k.startswith('ElementSpacing')][0]
+        
+        offArr = np.array(offset.split(' = ')[1].split(' ')).astype('float')
+        eleArr = np.array(EleSpacing.split(' = ')[1].split(' ')).astype('float')
+        CT = CTImage(offArr[0],offArr[1],offArr[2],eleArr[0],eleArr[1],eleArr[2])
+        transform = np.array(line.split(' = ')[1].split(' ')).astype('float')
+        transform = np.round(transform)
+        if np.any(transform != np.array([1, 0, 0, 0, 1, 0, 0, 0, 1])):
+            isflip = True
+        else:
+            isflip = False
+    itkimage = sitk.ReadImage(filename)
+    numpyimage = sitk.GetArrayFromImage(itkimage)
+    if(isflip == True):
+        numpyimage = numpyimage[:,::-1,::-1]
+    return (numpyimage,CT,isflip)
  
+# search mhd file in the folder
+def search(path=".", name="", fileDir = []):
+    
+    for item in os.listdir(path):
+        item_path = os.path.join(path, item)
+        if os.path.isdir(item_path):
+            search(item_path, name)
+        elif os.path.isfile(item_path):            
+            if name in item:
+                fileDir.append(item_path)
+                
+    return fileDir
+
+def truncate_hu(image_array):
+    image_array[image_array > 400] = 400
+    # image_array[image_array > 3072] = 3072
+    
+    image_array[image_array <-1000] = -1000
+    # image_array[image_array <-1024] = -1024
+    
+def normalazation(image_array):
+    max = image_array.max()
+    min = image_array.min()
+    image_array = (image_array - min)/(max - min)
+    # image_array = (image_array - min)/(max - min)* 255
+    # image_array = np.round(image_array)
+    image_array = image_array
+    return image_array 

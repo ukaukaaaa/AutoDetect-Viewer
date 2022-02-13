@@ -43,9 +43,13 @@ class Alg(AlgBase):
 
         return None
     
-    def inference(self, img_array):
+    def inference(self, img_array, segmask=None):
         map_result = {'type':'img'}
-        img_resize = cv2.resize(img_array,  tuple(self.cfg_info[self.model_name]['normal']['infer_size']))
+        if segmask is not None:
+            img_mask = img_array * segmask
+        else:
+            img_mask = img_array
+        img_resize = cv2.resize(img_mask,  tuple(self.cfg_info[self.model_name]['normal']['infer_size']))
         img = (img_resize - self.cfg_info[self.model_name]['normal']['mean']) / self.cfg_info[self.model_name]['normal']['std']
         img = img.transpose((2,0,1))    
         img_tensor = torch.from_numpy(img.astype(np.float32)).unsqueeze(0)
@@ -65,17 +69,22 @@ class Alg(AlgBase):
         boxes = valid_pred[:,0:4]
         cls = valid_pred[:, 5]
         scores = valid_pred[:, 4]
-        x_rate = img_array.shape[1] /  self.cfg_info[self.model_name]['normal']['infer_size'][0]
-        y_rate = img_array.shape[0] /  self.cfg_info[self.model_name]['normal']['infer_size'][1]
+        x_rate = img_mask.shape[1] /  self.cfg_info[self.model_name]['normal']['infer_size'][0]
+        y_rate = img_mask.shape[0] /  self.cfg_info[self.model_name]['normal']['infer_size'][1]
         
         # no need for this line
-        img_array = np.stack([np.flipud(img_array[...,0])]*3, axis=2)
+        if self.model_name == 'pancreas':
+            img_array = np.stack([np.flipud(img_array[...,0])]*3, axis=2)
 
         boxes[:,0:4:2] = boxes[:,0:4:2] * x_rate
         
         # no need for 512 - 
-        boxes[:,1:4:2] = 512 - boxes[:,1:4:2] * y_rate
+        if self.model_name == 'pancreas':
+            boxes[:,1:4:2] = 512 - boxes[:,1:4:2] * y_rate
+        else:
+            boxes[:,1:4:2] = boxes[:,1:4:2] * y_rate
 
-        vis(img_array, boxes, scores, cls, conf=float(self.cfg_info[self.model_name]['normal']['infer_conf']), class_names=self.cfg_info[self.model_name]['normal']['class_names'])
+
+        vis(img_array, boxes, scores, cls, conf=float(self.cfg_info[self.model_name]['normal']['infer_conf']), class_names=self.cfg_info[self.model_name]['normal']['class_names'], model_name=self.model_name)
         map_result['result'] = img_array
         return map_result
