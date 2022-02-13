@@ -146,7 +146,6 @@ class MainWidget(QWidget, cUi):
             if self.is_file == True and len(self.slice_list) > 0:
                 if lastslider == self.Slider.value():
                     continue
-                print(self.Slider.value())
                 if self.model_name == 'nodule':
                     self.cImageWidget.cAlg.add_img(self.slice_list[self.Slider.value()]['image'])
                 else:
