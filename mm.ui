@@ -19,7 +19,7 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0,3">
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,10">
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,10">
          <item>
           <widget class="QPushButton" name="btnPhoto">
            <property name="text">
@@ -31,6 +31,13 @@
           <widget class="QPushButton" name="btnFile">
            <property name="text">
             <string>3D Image</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnHide">
+           <property name="text">
+            <string>Hide</string>
            </property>
           </widget>
          </item>

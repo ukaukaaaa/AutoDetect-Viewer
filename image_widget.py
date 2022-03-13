@@ -99,10 +99,6 @@ class ImageWidget(QWidget, cUi):
             self.infer = None
             # need save the result
             if save_result == 1:
-                #txt_color = (0, 0, 255)
-                #font = cv2.FONT_HERSHEY_SIMPLEX
-                #h,w,c = img.shape
-                #cv2.putText(img, "save result", (w-100, h-10), font, 0.4, txt_color, thickness=1)
                 self.save_result = True
                 if not os.path.exists(save_path):
                     os.makedirs(save_path)

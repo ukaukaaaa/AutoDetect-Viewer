@@ -84,6 +84,11 @@ class MainWidget(QWidget, cUi):
         self.create_process_dialog = None
         self.slice_list = []
         self.is_file = False
+        self.hidesignal = None
+
+    # @pyqtSlot()
+    # def on_btnHide_clicked(self):
+    #     self.hidesignal = 1 if self.hidesignal == 0 or self.hidesignal == None else 0
 
     @pyqtSlot()
     def on_btnPhoto_clicked(self):
@@ -128,7 +133,6 @@ class MainWidget(QWidget, cUi):
                 self.slice_list = [{"image": np.stack([numpyimage.transpose(1,2,0)[:,:,i]]*3, axis=2).astype(np.uint8),
                                     "mask": np.stack([numpymask.transpose(1,2,0)[:,:,i]]*3, axis=2).astype(np.uint8)} 
                                     for i in range(numpyimage.shape[0])]
-                print(len(self.slice_list))
 
 
     def det_thread_func(self):
