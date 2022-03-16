@@ -6,79 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>818</width>
-    <height>745</height>
+    <width>612</width>
+    <height>638</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string/>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <layout class="QVBoxLayout" name="verticalLayout_2" stretch="5,1">
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0" colspan="2">
+    <layout class="QVBoxLayout" name="verticalLayout_2" stretch="5,0">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0,3">
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,10">
-         <item>
-          <widget class="QPushButton" name="btnPhoto">
-           <property name="text">
-            <string>2D Image</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="btnFile">
-           <property name="text">
-            <string>3D Image</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="btnHide">
-           <property name="text">
-            <string>Hide</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="font">
-            <font>
-             <family>Arial</family>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>Model List</string>
-           </property>
-           <property name="textFormat">
-            <enum>Qt::AutoText</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTreeWidget" name="treeModel">
-           <property name="columnCount">
-            <number>1</number>
-           </property>
-           <column>
-            <property name="text">
-             <string notr="true">1</string>
-            </property>
-           </column>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QScrollBar" name="Slider">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
-       </item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="3,0">
        <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="font">
@@ -109,8 +48,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>538</width>
-                <height>538</height>
+                <width>537</width>
+                <height>537</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout_2">
@@ -153,10 +92,25 @@
          </widget>
         </widget>
        </item>
+       <item>
+        <widget class="QScrollBar" name="Slider">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>
-      <widget class="QTextEdit" name="logEdit"/>
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QPushButton" name="btnFile">
+         <property name="text">
+          <string>Select File</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

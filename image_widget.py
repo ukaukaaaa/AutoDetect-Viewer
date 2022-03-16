@@ -20,7 +20,7 @@ import time
 from PIL import Image
 
 # ui配置文件
-cUi, cBase = uic.loadUiType("nn.ui")
+cUi, cBase = uic.loadUiType("v1_box.ui")
 
 # 主界面
 class ImageWidget(QWidget, cUi):

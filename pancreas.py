@@ -27,7 +27,7 @@ except ImportError:
 from matplotlib import pyplot as plt
 
 # ui配置文件
-cUi, cBase = uic.loadUiType("v1_main.ui")
+cUi, cBase = uic.loadUiType("v2_main.ui")
 
 # 主界面
 class MainWidget(QWidget, cUi):
@@ -59,12 +59,6 @@ class MainWidget(QWidget, cUi):
 
         # init config widget
         self.btnSaveCfg.hide()
-
-        # show imagewidget
-        self.tabWidget.setCurrentIndex(0)
-    
-        # init treewidget
-        self.treeModel.header().setVisible(False)
         
         # init log
         self.log_sig.connect(self.slot_log_info)
@@ -85,20 +79,6 @@ class MainWidget(QWidget, cUi):
         self.slice_list = []
         self.is_file = False
         self.hidesignal = None
-
-    # @pyqtSlot()
-    # def on_btnHide_clicked(self):
-    #     self.hidesignal = 1 if self.hidesignal == 0 or self.hidesignal == None else 0
-
-    @pyqtSlot()
-    def on_btnPhoto_clicked(self):
-        self.is_file = False
-        self.slice_list = []
-        print('on_btnPhoto_clicked')
-        img_path = QFileDialog.getOpenFileName(self,  "Choose one file", "./inputs", "Images (*.jpg);;Images (*.png)") 
-        img_path = img_path[0]
-        if img_path != '':
-            self.cImageWidget.slot_photo_frame(img_path)
 
     @pyqtSlot()
     def on_btnFile_clicked(self):
@@ -144,7 +124,7 @@ class MainWidget(QWidget, cUi):
         lastslider = -1
         while self.det_thread_flag:
             if self.update_model_flag:
-                self.updaet_model()
+                self.update_model()
                 self.update_model_flag = False
 
             if self.is_file == True and len(self.slice_list) > 0:
@@ -184,7 +164,7 @@ class MainWidget(QWidget, cUi):
     def slot_log_info(self, info):
         if str(info).startswith('cmd:'):
             if 'load models finished' in str(info):
-                self.init_model_tree()
+                self.choosemodel("ScaledYolov4", "pancreas")
             if 'start create model' in str(info):
                 self.tabWidget.setCurrentIndex(0)
                 self.cImageWidget.change_background('start_load')               
@@ -206,22 +186,8 @@ class MainWidget(QWidget, cUi):
                 self.setWindowTitle(title_name)
         elif str(info).startswith('news_id'):
             self.tabWidget.setTabIcon(2, QIcon(QPixmap("./icons/news.png")))
-        else:
-            self.logEdit.append('<font color="#FF9090">%s</font>'%(info))    
-                
-    def check_news(self, x):
-        lines = x.split('\n')
-        for line in lines:
-            if 'news_id' in line:
-                id = int(line.split(':')[-1])
-                if id != self.info['news_id']:
-                    self.info['news_id'] = id
-                    self.has_news = True
-                    with open('./info.json', 'w') as f:
-                        json.dump(self.info, f)
-                    self.log_sig.emit('news_id')
-                    break
-                
+ 
+                             
         
     def add_img(self, img):
         if self.det_thread_queue.full():
@@ -233,6 +199,8 @@ class MainWidget(QWidget, cUi):
         self.alg_model_map = {}
         self.log_sig.emit('Initialization, please wait...')
         for sub_dir in os.listdir('./model_zoo'):
+            if sub_dir == "YoloV5":
+                continue
             self.log_sig.emit('>> Loading model: %s'%str(sub_dir))
             sub_path = os.path.join('./model_zoo', sub_dir)
             if os.path.isdir(sub_path):
@@ -246,25 +214,14 @@ class MainWidget(QWidget, cUi):
                     self.log_sig.emit('>> Loading model: %s failed'%str(sub_dir))
         self.log_sig.emit('Load models finished\n')
         self.log_sig.emit('cmd:load models finished')
-
-    def init_model_tree(self):
-        for alg in self.alg_model_map.keys():
-            item_alg = QTreeWidgetItem(self.treeModel)
-            #item_alg.setFlags(Qt.ItemIsEnabled)
-            item_alg.setText(0, alg)
-            for model in self.alg_model_map[alg]:
-                item_model = QTreeWidgetItem(item_alg)
-                item_model.setText(0, model)
-                    
-    def updaet_model(self):
+                  
+    def update_model(self):
         self.log_sig.emit('cmd:start create model')
         self.log_sig.emit('Start to create model: %s'%str(self.model_name))
         self.log_sig.emit('>> Stop ImageWidget')
         self.cImageWidget.stop_all()
         title_name = self.info['version'] + '(Current model: ' + self.model_name + ";"
 
-        ##
-        # self.alg_name = "YoloV5"; self.model_cfg['normal']['weight'] = "yolo5x.pt"
 
         pretrain_path = './model_zoo/' + self.alg_name + '/' + self.model_cfg['normal']['weight']
         if not os.path.exists(pretrain_path):
@@ -347,49 +304,38 @@ class MainWidget(QWidget, cUi):
                     if new_cfg_value != 'cpu':
                         if not torch.cuda.is_available():
                             reply = QMessageBox.warning(self,
-                                u'警告', 
-                                u'当前pytorch不支持cuda, 将创建cpu模型', 
+                                u'Warning', 
+                                u'cuda not support, please change to cpu', 
                                 QMessageBox.Yes)
                             edit_widget.setText('cpu')
                             new_cfg_value = 'cpu'
                 self.model_cfg[key][sub_key] = new_cfg_value
-
-    def on_treeModel_itemClicked(self, item, seq):
-        print(item.text(0), item.parent())
-        if item.parent() is None:
-            print('you select alg')
-        else:
-            print('yolo select model: ', item.parent().text(0), item.text(0))
-            self.alg_name = item.parent().text(0)
-            self.model_name = item.text(0)
-            api = get_api_from_model(self.alg_name)
-            if api is None:
-                self.alg = None
-                print('error, the api can not import')
-            else:
-                self.alg = api.Alg()
-                self._init_cfg_widget()
-                #self.updaet_model()
-                self.update_model_flag = True
     
+    def choosemodel(self, alg, model):
+        self.alg_name = alg
+        self.model_name = model
+        api = get_api_from_model(self.alg_name)
+        if api is None:
+            self.alg = None
+            print('error, the api can not import')
+        else:
+            self.alg = api.Alg()
+            self._init_cfg_widget()
+            self.update_model_flag = True
+
     @pyqtSlot()
     def on_btnSaveCfg_clicked(self):
         print('button btnSaveCfg clicked')
         self._get_cfg_widget()
         self.alg.put_model_cfg(self.model_name, self.model_cfg)
-        #self.updaet_model()
         self.update_model_flag = True
 
     def closeEvent(self, event):        
-        # reply = QMessageBox.question(self, 'Message',"Are you sure to quit?",
-        #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        # if reply == QMessageBox.Yes:
         event.accept()
         self.cImageWidget.stop_all()
         self.det_thread_flag = False
         self.det_thread_handle.join()
-        # else:
-        #     event.ignore()
+
 
         
 if __name__ == "__main__":
