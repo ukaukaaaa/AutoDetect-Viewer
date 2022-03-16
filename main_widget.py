@@ -20,10 +20,7 @@ import json
 import pdb
 import cv2
 import numpy as np
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import queue
 from matplotlib import pyplot as plt
 
 # ui配置文件
